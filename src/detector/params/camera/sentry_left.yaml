@@ -1,0 +1,31 @@
+%YAML:1.0
+---
+W: 1440
+H: 1080
+PixelFormat: 0x01080009
+ExposureTime: 7000
+Gain: 0
+Gamma: 1
+
+# sentry_left
+
+K: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   # sentry_right
+   data:  [1.2585069542225112e+03, 0.,                     7.1950000000000000e+02,
+           0.,                     1.2585069542225112e+03, 5.3950000000000000e+02,
+           0.,                     0.,                     1.                     ]
+
+D: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   # Sentry_right
+   data:  [-1.2437971093230218e-01, 1.8393134881091347e-01, 0., 0., -2.2629571843784446e-01]
+
+C_translation:
+   x: 0.15
+   y: 0.0
+   z: 0.0145

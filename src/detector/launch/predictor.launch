@@ -1,0 +1,12 @@
+<launch>
+    <arg name="visualize" default="true"/>
+
+    <node pkg="detector" type="detector_node" name="detector_node" output="screen" />
+    <node pkg="detector" type="tf_node" name="tf_node" />
+    <node pkg="detector" type="tracker_node" name="tracker_node" output="screen" />
+    <node pkg="decision" type="decision_node" name="decision_node" output="screen" />
+
+    <group if="$(arg visualize)">
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find detector)/launch/predictor.rviz" />
+    </group>
+</launch>
