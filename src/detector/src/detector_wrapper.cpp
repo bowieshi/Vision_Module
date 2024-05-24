@@ -1,4 +1,5 @@
 #include "detector_wrapper.hpp"
+#include "armor.hpp"
 #include <chrono>
 
 ArmorDetectorNode::ArmorDetectorNode(ros::NodeHandle &nh)
@@ -9,32 +10,32 @@ ArmorDetectorNode::ArmorDetectorNode(ros::NodeHandle &nh)
 
     // Detector
     detector_ = initDetector();
-    debug = true;
-}
+    debug = false;
+}   
 
 std::unique_ptr<Detector> ArmorDetectorNode::initDetector()
 {
-    int binary_thres = 60;
+    int binary_thres = 100;
 
     auto detect_color = RED;
 
     Detector::LightParams l_params = {
-        .min_ratio = 0.01,
-        .max_ratio = 100,
+        .min_ratio = 0.001,
+        .max_ratio = 0.5,
         .max_angle = 40.0};
 
     Detector::ArmorParams a_params = {
-        .min_light_ratio = 0.5,
+        .min_light_ratio = 0.6,
         .min_small_center_distance = 0.8,
         .max_small_center_distance = 4.0,
-        .min_large_center_distance = 3.0,
+        .min_large_center_distance = 3.2,
         .max_large_center_distance = 5.5,
-        .max_angle = 15};
+        .max_angle = 20};
 
     auto detector = std::make_unique<Detector>(binary_thres, detect_color, l_params, a_params);
 
     // Init classifier
-    std::string pkg_path = "/home/hero/Vision_Module/src/detector";
+    std::string pkg_path = "/home/infantry_1/catkin_ws/src/detector";
     auto model_path = pkg_path + "/model/mlp.onnx";
     auto label_path = pkg_path + "/model/label.txt";
     double threshold = 0.7;
@@ -56,9 +57,9 @@ std::vector<Armor> ArmorDetectorNode::detectArmors(const cv::Mat & img)
     // filter out undesirable armors
     for (auto armor : armors) {
         std::cout << "Armor id: " << armor.id << std::endl;
-        if (armor.id != 9) {
-            filtered_armors.push_back(armor);
-        }
+        if (armor.id == 9)
+            continue;
+        filtered_armors.push_back(armor);
     }
 
     // publish debug info

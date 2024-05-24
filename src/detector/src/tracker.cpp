@@ -11,7 +11,7 @@ Tracker::Tracker(double max_match_distance, double max_match_yaw_diff) :
     max_match_distance_(max_match_distance), 
     max_match_yaw_diff_(max_match_yaw_diff) {}
 
-void Tracker::init(const detector::Armors & armors_msg, int id) {
+void Tracker::init(const detector::Armors & armors_msg) {
     if (armors_msg.armors.empty()) {
         return;
     }
@@ -19,21 +19,11 @@ void Tracker::init(const detector::Armors & armors_msg, int id) {
     // Simply choose the armor that is closest to image center
     double min_sq_distance = DBL_MAX;
     tracked_armor = armors_msg.armors[0];
-    bool found_same_id_armor = false;
     for (const auto & armor : armors_msg.armors) {
-        if (armor.id == id)
-        {
-            found_same_id_armor = true;
-            
             double sq_distance = armor.pose.position.x * armor.pose.position.x + armor.pose.position.y * armor.pose.position.y;
             if (sq_distance < min_sq_distance) {
                 tracked_armor = armor;
             }
-        }
-    }
-
-    if (!found_same_id_armor) {
-        return;
     }
 
     initEKF(tracked_armor);

@@ -2,6 +2,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdio>
+#include <ostream>
 #include <unistd.h>
 #include <string>
 #include <pthread.h>
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
     ros::NodeHandle nh;
     
     ArmorDetectorNode detector(nh);
-    CoordinateTransformer transformer;
+    CoordinateTransformer transformer(nh);
     camera::Camera cam;
     cv::Mat img;
     detector::Armor armor;
@@ -88,12 +89,12 @@ int main(int argc, char *argv[])
 
     armors_pub = nh.advertise<detector::Armors>("/detector/armors", 10);
 
-    bool debug = true;
+    bool debug = false;
 
-    int cnt = 0;
     while(ros::ok()) {
         ros::Time timestamp = ros::Time::now();
         cam.ReadImg(img);
+        // std::cout << "Received an image" << std::endl;
         // check succuss
         if(!img.empty()) {
             // convert color
@@ -109,6 +110,7 @@ int main(int argc, char *argv[])
                 sensor_msgs::ImagePtr ros_image = cv_image.toImageMsg();
                 img_pub.publish(ros_image);
             }
+            
             // detect armors in the image
             std::vector<Armor> camera_armors = detector.detectArmors(img);
             
@@ -133,9 +135,11 @@ int main(int argc, char *argv[])
             if(debug) {
                 publish_armor_marker(armors_msg);
             }
-            cnt++;
         }
-        ros::spinOnce();
+        else {
+            // std::cout << "Failed to read image" << std::endl;
+        }
+        // ros::spinOnce();
     }
     
     pthread_exit(NULL);

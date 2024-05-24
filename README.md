@@ -2,13 +2,9 @@
 
 This is a manual book about how to deploy Vision Module to your mini-nuc
 
-**Author: Shi Boao, Wu Haoyuan**
+**Author: Shi Boao**
 
-**Date: 26/2/2024**
-
-Updated on Feb 26:
-1. Renamed some files, variables, and class names.
-2. Removed distance_to_image_center from Armor.msg
+**Date: 26/3/2024**
 
 ## Step 1: Clone this Repo
 

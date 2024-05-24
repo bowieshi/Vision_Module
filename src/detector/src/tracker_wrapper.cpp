@@ -90,7 +90,7 @@ TrackerWrapper::TrackerWrapper(ros::NodeHandle &nh) : tracker(max_match_distance
     Eigen::DiagonalMatrix<double, 9> p0;
     p0.setIdentity();
     max_match_distance = 0.15, max_match_yaw_diff = 1.0;
-
+    
     tracker.ekf = Extended_KF{f, h, j_f, j_h, u_q, u_r, p0};
 
     target_pub = nh.advertise<detector::Target>("/tracker/target", 10);
@@ -151,33 +151,27 @@ void TrackerWrapper::armorsCallback(const detector::Armors &armors_msg) {
         float64 radius_2
         float64 dz
     */
-    if (tar_id == 0) {
-        ROS_INFO("In patrol state");
-        // Patrol state to do
-        tracker.tracker_state = Tracker::LOST;
-        return;
-    }
+    // if (tar_id == 0) {
+    //     ROS_INFO("In patrol state");
+    //     // Patrol state to do
+    //     tracker.tracker_state = Tracker::LOST;
+    //     return;
+    // }
 
-    if(armors_msg.armors.size() == 0) {
-        ROS_INFO("Waiting mode");
-        // Waiting mode to do
-        return;
-    }
-    
+    // if(armors_msg.armors.size() == 0) {
+    //     ROS_INFO("Waiting mode");
+    //     // Waiting mode to do
+    //     return;
+    // }
     detector::Target target_msg;
     ros::Time time = armors_msg.header.stamp;
     target_msg.header.stamp = time;
     target_msg.header.frame_id = "world";
     // Update tracker
     if (tracker.tracker_state == Tracker::LOST) {
-        ROS_INFO("Tracker LOST!!!!");
-        tracker.init(armors_msg, tar_id);
-        if (tracker.tracker_state != Tracker::LOST) {
-            ROS_INFO("Changed!!");
-        } else {
-            ROS_INFO("Waiting mode");
-            // Waiting mode to do
-        }
+        ROS_INFO("Tracker LOST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        tracker.init(armors_msg);
+        target_msg.status = "LOST";
         target_msg.tracking = false;
     }
     else {
@@ -195,11 +189,13 @@ void TrackerWrapper::armorsCallback(const detector::Armors &armors_msg) {
         // info_pub_->publish(info_msg);
 
         if (tracker.tracker_state == Tracker::DETECTING) {
-            ROS_INFO("Tracker DETECTING!!!!\n");
+            ROS_INFO("Tracker DETECTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            target_msg.status = "DETECTING";
             target_msg.tracking = false;
         }
         else if (tracker.tracker_state == Tracker::TRACKING || tracker.tracker_state == Tracker::TEMP_LOST) {
             ROS_INFO("Tracker TRACKING or TEMP_LOST\n");
+            target_msg.status = "TRACKING";
             target_msg.tracking = true;
             // Fill target message
             const auto & state = tracker.target_state;
@@ -216,10 +212,10 @@ void TrackerWrapper::armorsCallback(const detector::Armors &armors_msg) {
             target_msg.radius_1 = state(8);
             target_msg.radius_2 = tracker.another_r;
             target_msg.dz = tracker.dz;
-            target_pub.publish(target_msg);
             publishMarkers(target_msg);
         }
     }
+    target_pub.publish(target_msg);
 
     last_time = time;
 }
@@ -306,6 +302,6 @@ void TrackerWrapper::publishMarkers(const detector::Target & target_msg) {
 }
 
 void TrackerWrapper::setTargetId(int id) {
-    tar_id = id;
-    std::cout << "Set target id to " << tar_id << std::endl;
+    tar_id = 0;
+    // std::cout << "Set target id to " << tar_id << std::endl;
 }

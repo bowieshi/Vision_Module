@@ -261,8 +261,11 @@ bool SerialPort::m_Open(const char* portname,
 {
     // 打开串口
     pHandle[0] = -1;
+    // 以 读写、阻塞 方式打开
+    pHandle[0] = ::open(portname, O_RDWR | O_NOCTTY);
+    
     // 以 读写、不阻塞 方式打开
-    pHandle[0] = ::open(portname, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    // pHandle[0] = ::open(portname, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     // 打开失败，则打印失败信息，返回false
     if (pHandle[0] == -1)
@@ -440,10 +443,10 @@ int SerialPort::m_Send(const void* buf, int len)
 int SerialPort::m_Receive(void* buf, int maxlen)
 {
     int receiveCount = ::read(pHandle[0], buf, maxlen);
-    if (receiveCount < 0)
-    {
-        receiveCount = 0;
-    }
+    // if (receiveCount < 0)
+    // {
+    //     receiveCount = 0;
+    // }
     return receiveCount;
 }
 #endif // _WIN32 

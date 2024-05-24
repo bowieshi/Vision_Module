@@ -1,18 +1,24 @@
 #include "gimbal_control.hpp"
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <math.h>
+#include <thread>
 
 void Gimbal::GetInfo(){
-
-    if (Crc8Verify(buf_to_decode_, sizeof(ProjectileRx))){
-        memcpy(&rx_struct_, buf_to_decode_, sizeof(ProjectileRx));
+    // if(sp.m_Receive(rx_buffer_, sizeof(ProjectileRx)) == 0){
+    //     return;
+    // }
+    
+    if (Crc8Verify(rx_buffer_, sizeof(ProjectileRx))) {
+        memcpy(&rx_struct_, rx_buffer_, sizeof(ProjectileRx));
         pitch = rx_struct_.pitch;
         yaw = rx_struct_.yaw;
         v_forward = rx_struct_.v_forward;
         v_right = rx_struct_.v_right;
         v_angular = rx_struct_.v_angular;
+
         // std::cout << "In gimbal control: " << rx_struct_.pitch << " " << rx_struct_.yaw << std::endl;
     }
     else{
@@ -20,30 +26,80 @@ void Gimbal::GetInfo(){
     }
 }
 
+int Gimbal::readn(uint8_t *buf, size_t n){
+    while(n > 0){
+        int nread = sp.m_Receive(buf, n);
+        if(nread < 0){
+            // std::cout<<nread<<std::endl;
+            // printf("Read Serial Error: \n");
+            return -1;
+        }
+        else if(nread == 0){
+            continue;
+        }
+        n -= nread;
+        buf += nread;
+    }
+    return 0;
+}
+
 void Gimbal::Read(){
     const int len_buf = sizeof(ProjectileRx)*10;
     while(ok){
-        if (sp.m_Receive(rx_buffer_, len_buf)) {
-            for(int idx = 0; idx < len_buf - sizeof(ProjectileRx); )
-            {
-                if (rx_buffer_[idx]==0x3A)
-                {
-                    
-                    memcpy(buf_to_decode_, rx_buffer_+ idx, sizeof(ProjectileRx));
-                    GetInfo();
-                    idx+=sizeof(ProjectileRx);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        // if(sp.m_Receive(rx_buffer_, len_buf)) { // todo multi-thread
+            // for(int idx = 0; idx < len_buf-sizeof(ProjectileRx); )
+            // {
+            //     if (rx_buffer_[idx] == 0x3A)
+            //     {
+            //         memcpy(buf_to_decode_, rx_buffer_+idx, sizeof(ProjectileRx));
+            //         for(int i = 0; i < sizeof(ProjectileRx); i++){
+            //             printf("%x ", buf_to_decode_[i]);
+            //         }
+            //         printf("\n");
+            //         GetInfo();
+            //         idx+=sizeof(ProjectileRx);
+            //     }
+            //     else
+            //     {
+            //         ++idx;
+            //     }
+            // }
+            // if (rx_buffer_[0] == 0x3A) {
+            //     GetInfo();
+            // }
+            // else{
+            //     std::cout<<"error frame head"<<std::endl;
+            // }
+        if (readn(rx_buffer_, 1) == 0) {
+            // printf("%x", rx_buffer_[0]);
+            switch (rx_buffer_[0]) {
+                case 0x3A: {
+                    if(readn(rx_buffer_+1, sizeof(ProjectileRx)-1) == 0){
+                        // for(int i = 0; i < sizeof(ProjectileRx); i++){
+                        //     printf("%2x ", rx_buffer_[i]);
+                        // }
+                        // printf("\n");
+                        GetInfo();
+                    }
+                    else{
+                        // printf("Read Serial Error (n = %d)\n", (int)sizeof(ProjectileRx)-1);
+                    }
+                    break;
                 }
-                else
-                {
-                    ++idx;
-                }
+
+                default:
+                    break;
             }
+        }
+        else{
+            // printf("Read Serial Error (n = 1)\n");
         }
     }
 }
 
 Gimbal::Gimbal():ok(true), read_thread(&Gimbal::Read, this){
-    sp.OpenPort("/dev/ttyACM0", 115200, 0, 8, 1);
+    sp.OpenPort("/dev/USB_CBOARD", 115200, 0, 8, 1);
     pitch = 0;
     yaw = 0;
 }
@@ -70,7 +126,7 @@ bool Gimbal::move(float disp_pitch, float disp_yaw, bool fire = false){        /
     // std::cout << pitch << " " << yaw << std::endl;
 
     // Construct data
-    unsigned char packet[10];
+    unsigned char packet[11];
     packet[0] = 0xA3;
     union {
         float actual;
@@ -86,7 +142,7 @@ bool Gimbal::move(float disp_pitch, float disp_yaw, bool fire = false){        /
         packet[5 + i] = tx_y.raw[i];  // y
     }
     packet[9] = fire;
-    // Crc8Append(packet, 10);
+    Crc8Append(packet, 11);
     if (sp.m_Send(packet, sizeof(packet)) > 0) {
         printf("send successfully\n");
         return 1;
@@ -98,9 +154,10 @@ bool Gimbal::move(float disp_pitch, float disp_yaw, bool fire = false){        /
 }
 
 
-bool Gimbal::set(float pitch_, float yaw_, bool fire = false){        //Input absolute state.
+bool Gimbal::set(float pitch_, float yaw_, bool fire = false, uint8_t patrol = 0){        //Input absolute state.
+    pitch_ = pitch_ / 1.135;
     // Construct data
-    unsigned char packet[10];
+    unsigned char packet[12];
     packet[0] = 0xA3;
     union {
         float actual;
@@ -115,8 +172,9 @@ bool Gimbal::set(float pitch_, float yaw_, bool fire = false){        //Input ab
         packet[5 + i] = tx_y.raw[i];  // y
     }
     packet[9] = fire;
+    packet[10] = patrol;
     
-    // Crc8Append(packet, 10);
+    Crc8Append(packet, 12);
     if (sp.m_Send(packet, sizeof(packet)) > 0) {
         printf("send successfully\n");
         printf("Send set command: %f %f\n", pitch_, yaw_);
@@ -133,7 +191,7 @@ bool Gimbal::keep(){
 }
 
 float Gimbal::cur_pitch(){
-    return pitch;
+    return 1.135 * pitch;
 }
 
 float Gimbal::cur_yaw(){

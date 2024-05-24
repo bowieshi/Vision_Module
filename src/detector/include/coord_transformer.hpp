@@ -22,7 +22,7 @@
 
 class CoordinateTransformer {
 public:
-    CoordinateTransformer();
+    CoordinateTransformer(ros::NodeHandle &nh);
     geometry_msgs::Pose transform(Armor &camera_armors, ros::Time timestamp);
 
 private:
@@ -34,4 +34,5 @@ private:
     cv::Mat C_CV_MAT;          // 相机畸变矩阵CV-Mat
     tf2_ros::Buffer buffer;
     tf2_ros::TransformListener listener;
+    ros::Publisher state_pub;
 };

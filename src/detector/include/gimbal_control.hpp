@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <thread>
 #include <memory>
+#include <atomic>
 
 class Gimbal{
 public:
@@ -15,7 +16,7 @@ public:
     ~Gimbal();
     
     bool move(float, float, bool);
-    bool set(float, float, bool);
+    bool set(float, float, bool, uint8_t);
     bool keep();
 
     float cur_pitch();
@@ -41,8 +42,8 @@ private:
     uint8_t rx_buffer_[1024]{};
     uint8_t buf_to_decode_[64]{};
 
-    float pitch, yaw, bullet_speed;
-    float v_forward, v_right, v_angular;
+    std::atomic<float> pitch, yaw, bullet_speed;
+    std::atomic<float> v_forward, v_right, v_angular;
     float last_pitch, last_yaw;
     
     SerialPort sp;
@@ -54,6 +55,7 @@ private:
 
     void GetInfo();
     void Read();
+    int readn(uint8_t *, size_t);
 };
 
 #endif

@@ -45,16 +45,15 @@ add_executable(detector_node
   src/number_classifier.cpp
   src/coord_transformer.cpp
   src/SerialPort.cpp
-  src/Checksum.cpp
 )
 add_executable(tf_node
   src/tf_node.cpp
   src/gimbal_control.cpp
   src/Checksum.cpp
   src/SerialPort.cpp
+  src/trajectory.cpp
 )
 add_executable(tracker_node
-    src/trajectory.cpp
     src/tracker_node.cpp
     src/tracker_wrapper.cpp
     src/tracker.cpp

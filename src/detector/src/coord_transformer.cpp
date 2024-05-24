@@ -2,16 +2,18 @@
 #include "geometry_msgs/Pose.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
+#include "std_msgs/Float64MultiArray.h"
 
-CoordinateTransformer::CoordinateTransformer():
+CoordinateTransformer::CoordinateTransformer(ros::NodeHandle &nh):
         listener(buffer),
         R_CI(Eigen::Matrix3d::Identity()),
         R_CI_CV_MAT(cv::Mat::eye(3, 3, CV_64F)),
         F_CV_MAT(cv::Mat::eye(3, 3, CV_64F)),
         C_CV_MAT(cv::Mat::zeros(5, 1, CV_64F)) {
-    cv::FileStorage f_in("/home/hero/Vision_Module/src/detector/params/camera.yaml", cv::FileStorage::READ);
+    cv::FileStorage f_in("/home/infantry_1/catkin_ws/src/detector/params/camera.yaml", cv::FileStorage::READ);
     f_in["K"] >> F_CV_MAT;
     f_in["D"] >> C_CV_MAT;
+    state_pub = nh.advertise<std_msgs::Float64MultiArray>("/tracker/state", 10);
 }
 
 void CoordinateTransformer::pnp(const cv::Point2f p[4], ArmorType armor_type, Eigen::Matrix3d &camera_orient, Eigen::Vector3d &camera_posi) {
@@ -43,6 +45,41 @@ void CoordinateTransformer::pnp(const cv::Point2f p[4], ArmorType armor_type, Ei
     cv::Rodrigues(rvec, R);
     cv::cv2eigen(R, camera_orient);
     cv::cv2eigen(tvec, camera_posi);
+}
+
+
+double orientationToYaw(const geometry_msgs::Quaternion & q)
+{
+    // Get armor yaw
+    tf2::Quaternion tf_q;
+    tf_q.setX(q.x), tf_q.setY(q.y), tf_q.setZ(q.z), tf_q.setW(q.w);
+    
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+    return yaw;
+}
+
+double orientationToPitch(const geometry_msgs::Quaternion & q)
+{
+    // Get armor yaw
+    tf2::Quaternion tf_q;
+    tf_q.setX(q.x), tf_q.setY(q.y), tf_q.setZ(q.z), tf_q.setW(q.w);
+    
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+    return pitch;
+}
+
+double orientationToRoll(const geometry_msgs::Quaternion & q)
+{
+    // Get armor yaw
+    tf2::Quaternion tf_q;
+    tf_q.setX(q.x), tf_q.setY(q.y), tf_q.setZ(q.z), tf_q.setW(q.w);
+    
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+    
+    return roll;
 }
 
 geometry_msgs::Pose CoordinateTransformer::transform(Armor &camera_armor, ros::Time timestamp) {
@@ -95,16 +132,16 @@ geometry_msgs::Pose CoordinateTransformer::transform(Armor &camera_armor, ros::T
 
     try {
         world_pose = buffer.transform(camera_pose,"world");
+        // world_pose.pose.orientation = transform_rectify(world_pose.pose.orientation);
+        // world_armors.push_back(world_pose);
 
         detector::Armor armor_msg;
         // string number
         // string type
         // float32 distance_to_image_center
         // geometry_msgs/Pose pose
-
         armor_msg.id = camera_armor.id;
         armor_msg.type = (int)camera_armor.type;
-        ROS_INFO("Armor type: %d", armor_msg.type);
         // if(camera_armor.type == ArmorType::SMALL)
         //     armor_msg.type = "small";
         // else if(camera_armor.type == ArmorType::LARGE)
@@ -115,12 +152,12 @@ geometry_msgs::Pose CoordinateTransformer::transform(Armor &camera_armor, ros::T
         armor_msg.pose = world_pose.pose;
         armors_msg.armors.push_back(armor_msg);
 
-        // std_msgs::Float64MultiArray info;
-        // info.layout.dim.resize(1);
-        // info.layout.dim[0].size = 1;
-        // info.layout.dim[0].stride = 1;
-        // info.data = {orientationToRoll(camera_pose.pose.orientation), orientationToPitch(camera_pose.pose.orientation), orientationToYaw(camera_pose.pose.orientation)};
-        // state_pub.publish(info);
+        std_msgs::Float64MultiArray info;
+        info.layout.dim.resize(1);
+        info.layout.dim[0].size = 1;
+        info.layout.dim[0].stride = 1;
+        info.data = {orientationToRoll(camera_pose.pose.orientation), orientationToPitch(camera_pose.pose.orientation), orientationToYaw(camera_pose.pose.orientation)};
+        state_pub.publish(info);
         
         // ROS_INFO("I want yaw: %f",orientationToYaw(world_pose.pose.orientation));
         // std::cout << "Camera coordinates:" << camera_pose.pose.position.x << " " << camera_pose.pose.position.y << " " << camera_pose.pose.position.z << std::endl;

@@ -25,14 +25,14 @@ class Tracker {
 public:
     Tracker(double max_match_distance, double max_match_yaw_diff);
 
-    void init(const detector::Armors &armors_msg, int id);
+    void init(const detector::Armors &armors_msg);
 
     void update(const detector::Armors &armors_msg);
 
     Extended_KF ekf;
 
     int tracking_thres = 5;
-    int lost_thres;
+    int lost_thres = 5;
 
     enum State {
         LOST,

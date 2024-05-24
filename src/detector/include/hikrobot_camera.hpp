@@ -53,7 +53,7 @@ namespace camera
     //^ ********************************** Camera constructor************************************ //
     Camera::Camera()
     {
-        cv::FileStorage fs("/home/hero/Vision_Module/src/detector/params/camera.yaml", cv::FileStorage::READ);
+        cv::FileStorage fs("/home/infantry_1/catkin_ws/src/detector/params/camera.yaml", cv::FileStorage::READ);
 
         if (!fs.isOpened()) {
             return;
@@ -144,7 +144,7 @@ namespace camera
         nRet = MV_CC_SetFloatValue(handle, "ExposureTime", exposureTime);
         nRet = MV_CC_SetEnumValue(handle, "GainAuto", 0);
         nRet = MV_CC_SetFloatValue(handle, "Gain", gain);
-        nRet = MV_CC_SetBoolValue(handle, "GammaEnable", false);
+        nRet = MV_CC_SetBoolValue(handle, "GammaEnable", true);
         nRet = MV_CC_SetEnumValue(handle, "GammaSelector", 1);
         nRet = MV_CC_SetFloatValue(handle, "Gamma", gamma);
         // if (MV_OK == nRet)
@@ -165,7 +165,7 @@ namespace camera
         //     printf("PixelFormat :%d!\n", t.nCurValue); // 35127316
         // }
         // else
-        // {
+        // {ss
         //     printf("get PixelFormat fail! nRet [%x]\n", nRet);
         // }
         // 开始取流
