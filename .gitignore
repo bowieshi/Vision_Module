@@ -4,3 +4,4 @@
 /.cache/
 /.catkin_tools/
 /logs/
+.DS_Store
